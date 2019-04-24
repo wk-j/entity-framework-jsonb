@@ -26,9 +26,9 @@ namespace JsonB {
         private StudentSettingsHandler() { }
         public static StudentSettingsHandler Instance { get; } = new StudentSettingsHandler();
         public override StudentSettings Parse(object value) {
-            var json = (string)value;
-            var obj = JObject.Parse(json);
-            return obj.ToObject<StudentSettings>();
+            var stringValue = (string)value;
+            var json = string.IsNullOrEmpty(stringValue) ? "{}" : stringValue;
+            return JObject.Parse(json).ToObject<StudentSettings>();
         }
         public override void SetValue(IDbDataParameter parameter, StudentSettings value) {
             parameter.Value = JsonConvert.SerializeObject(value);
@@ -47,7 +47,7 @@ namespace JsonB {
         public int Id { set; get; }
 
         [Column(TypeName = "jsonb")]
-        public string Settings { set; get; }
+        public string Settings { set; get; } = "{}";
     }
 
     class MyContext : DbContext {
@@ -75,6 +75,7 @@ namespace JsonB {
                 context.Database.EnsureDeleted();
                 context.Database.EnsureCreated();
                 context.Students.Add(new Student { Settings = json });
+                context.Students.Add(new Student { });
                 context.SaveChanges();
             }
         }
@@ -86,13 +87,15 @@ namespace JsonB {
             using (var conn = new NpgsqlConnection(connectionString)) {
                 conn.Open();
                 var sql = @"select * from ""Students""";
-                var a = conn.QuerySingle<FakeStudent>(sql);
-                var settings = a.Settings;
-
-                Console.WriteLine(settings.A);
-                Console.WriteLine(settings.B);
-                Console.WriteLine(settings.Min);
-                Console.WriteLine(settings.Max);
+                var items = conn.Query<FakeStudent>(sql);
+                foreach (var a in items) {
+                    var settings = a.Settings;
+                    Console.WriteLine(settings.A);
+                    Console.WriteLine(settings.B);
+                    Console.WriteLine(settings.Min);
+                    Console.WriteLine(settings.Max);
+                    Console.WriteLine();
+                }
             }
         }
 
