@@ -2,6 +2,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
 
 namespace JsonB {
     public class StudentSettings {
@@ -30,9 +31,18 @@ namespace JsonB {
             var connectionString = "Host=localhost;Database=JsonB;User Id=postgres;Password=1234";
             var options = new DbContextOptionsBuilder().UseNpgsql(connectionString).Options;
 
+
             using (var context = new MyContext(options)) {
+                var settings = new StudentSettings {
+                    A = 100,
+                    B = 200
+                };
+
+                var json = JsonConvert.SerializeObject(settings);
+
+                context.Database.EnsureDeleted();
                 context.Database.EnsureCreated();
-                context.Students.Add(new Student { });
+                context.Students.Add(new Student { Settings = json });
                 context.SaveChanges();
             }
         }
