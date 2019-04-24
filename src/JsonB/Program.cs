@@ -22,6 +22,19 @@ namespace JsonB {
         }
     }
 
+    public class StudentSettingsHandler : TypeHandler<StudentSettings> {
+        private StudentSettingsHandler() { }
+        public static StudentSettingsHandler Instance { get; } = new StudentSettingsHandler();
+        public override StudentSettings Parse(object value) {
+            var json = (string)value;
+            var obj = JObject.Parse(json);
+            return obj.ToObject<StudentSettings>();
+        }
+        public override void SetValue(IDbDataParameter parameter, StudentSettings value) {
+            parameter.Value = JsonConvert.SerializeObject(value);
+        }
+    }
+
     public class StudentSettings {
         public int A { set; get; }
         public int B { set; get; }
@@ -46,7 +59,7 @@ namespace JsonB {
     }
 
     class FakeStudent {
-        public JObject Settings { set; get; }
+        public StudentSettings Settings { set; get; }
     }
 
     class Program {
@@ -68,11 +81,13 @@ namespace JsonB {
 
         static void Load(string connectionString) {
             SqlMapper.AddTypeHandler(JObjectHandler.Instance);
+            SqlMapper.AddTypeHandler(StudentSettingsHandler.Instance);
+
             using (var conn = new NpgsqlConnection(connectionString)) {
                 conn.Open();
                 var sql = @"select * from ""Students""";
                 var a = conn.QuerySingle<FakeStudent>(sql);
-                var settings = a.Settings.ToObject<StudentSettings>();
+                var settings = a.Settings;
 
                 Console.WriteLine(settings.A);
                 Console.WriteLine(settings.B);
